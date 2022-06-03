@@ -1,0 +1,435 @@
+plugins {
+    id 'com.android.application'
+    id 'org.jetbrains.kotlin.android'
+    id 'androidx.navigation.safeargs'
+    id 'kotlin-kapt'
+    id 'kotlin-parcelize'
+    id 'org.jetbrains.kotlin.plugin.serialization' version '1.6.21'
+//    id 'dagger.hilt.android.plugin'
+    id 'jacoco'
+}
+
+
+
+task jacocoTestReport(type: JacocoReport, dependsOn: ['testDebugUnitTest']) {
+
+    group "Reporting"
+    description "Generate Jacoco coverage reports."
+
+    reports {
+        xml.enabled = true
+        html.enabled = true
+        html.destination file("${rootProject.buildDir}/coverage-report")
+    }
+
+    def fileFilter = ['**/R.class',
+                      '**/R2.class',
+                      '**/R$*.class',
+                      '**/BuildConfig.*',
+                      '**/Manifest*.*',
+                      '**/*Test*.*',
+                      '**/AutoValue_*.*',
+                      '**/*JavascriptBridge.class',
+                      '**/*JsonObjectMapper*.*',
+                      '**/*MembersInjector*.*',
+                      '**/*$InjectAdapter.class',
+                      '**/*$ModuleAdapter.class',
+                      '**/*View.class',
+                      '**/*Activity*.*',
+                      '**/*Fragment*.*',
+                      '**/views/**',
+                      '**/viewholder/**',
+                      '**/viewholders/**',
+                      '**/wrapper/**',
+                      '**/orientation/**',
+                      '**/ktx/**',
+                      '**/decorator/**',
+                      '**/*$ViewInjector*.class',
+                      '**/*$ViewHolder*.class',
+                      '**/*$Viewholder*.class',
+                      '**/*ViewBinding*.*',
+                      '**/Dao*.class',
+                      '**/*Component*.*',
+                      '**/*Module*.*',
+                      '**/*Injector*.*',
+                      'android/**/*.*',
+                      '**/io/**',
+                      '**/apache/**',
+                      '**/sharing/**']
+
+//For minus that Gradle 5 and 5 too
+    def javaClasses = fileTree(dir: "$project.buildDir/intermediates/javac/debug", excludes: fileFilter)
+    def kotlinClasses = fileTree(dir: "$project.buildDir/tmp/kotlin-classes/debug", excludes: fileFilter)
+    def javaSrc = "$project.projectDir/src/main/java"
+    def kotlinSrc = "$project.projectDir/src/main/java"
+    def execution = fileTree(dir: project.buildDir,
+            includes: ['jacoco/testDebugUnitTest.exec'])
+
+    //For minus that Gradle 5 and 5 too
+//    sourceDirectories = files([javaSrc, kotlinSrc])
+//    classDirectories = files([javaClasses, kotlinClasses])
+
+    print execution
+
+//For minus that Gradle 5 and 5 too
+    //   executionData = files(execution)
+
+    //For Gradle 6 and above
+    sourceDirectories.from = subprojects.sourceSets.main.allSource.srcDirs
+    additionalSourceDirs.from = subprojects.sourceSets.main.allSource.srcDirs
+    classDirectories.from = subprojects.sourceSets.main.output
+    executionData.from = subprojects.jacocoTestReport.executionData
+    doLast() {
+        print "file://${reports.html.destination}/index.html"
+    }
+}
+
+
+
+
+
+
+android {
+    compileSdkVersion 32
+    buildToolsVersion "30.0.3"
+
+    defaultConfig {
+        applicationId "com.vickingdev.animationkotlin"
+        minSdkVersion 21
+        targetSdkVersion 32
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        testHandleProfiling true
+        testFunctionalTest true
+
+        javaCompileOptions {
+            annotationProcessorOptions {
+                arguments = ["room.schemaLocation": "$projectDir/schemas".toString()]
+            }
+        }
+
+        //necessary for FireBase
+        multiDexEnabled true
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        buildConfigField "String", "API_KEY", API_KEY
+        resValue "string", "API_KEY", API_KEY
+
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        kapt {
+            arguments {
+                arg("room.schemaLocation", "$rootDir/schemas")
+            }
+        }
+        vectorDrawables.useSupportLibrary = true
+    }
+
+
+    //Binding
+    buildFeatures {
+        dataBinding true
+        viewBinding true
+    }
+
+    buildTypes {
+        debug {
+            testCoverageEnabled = true
+        }
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    testOptions {
+
+        unitTests.returnDefaultValues = true
+
+
+        unitTests.all {
+            jacoco {
+                includeNoLocationClasses = true
+            }
+            unitTests.returnDefaultValues = true
+
+        }
+        //fait gaffe ici il y a 2 unitests !!!!!!!!!!!!!!!!!! Ricocarpe à vérifier
+        unitTests {
+            includeAndroidResources = true
+        }
+    }
+
+//    compileOptions {
+//        sourceCompatibility JavaVersion.VERSION_11
+//        targetCompatibility JavaVersion.VERSION_11
+//    }
+//    kotlinOptions {jvmTarget = '11'}
+
+    compileOptions {
+        coreLibraryDesugaringEnabled true
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+
+    kotlinOptions {
+        jvmTarget = '1.8'
+        freeCompilerArgs += "-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi"
+    }
+
+    // Gradle automatically adds 'android.test.runner' as a dependency.
+    //useLibrary 'android.test.runner'
+
+    useLibrary 'android.test.base'
+    useLibrary 'android.test.mock'
+    lint {
+        abortOnError false
+    }
+
+
+
+}
+
+dependencies {
+
+
+
+    //If you're building your app using Android Gradle plugin 4.0.0 or higher,
+    // the plugin extends support for using a number of Java 8 language APIs
+    // without requiring a minimum API level for your app.
+    coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:1.1.5'
+
+    //General
+    implementation 'androidx.appcompat:appcompat:1.4.2'
+    implementation 'androidx.legacy:legacy-support-v4:1.0.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+    implementation 'androidx.recyclerview:recyclerview:1.2.1'
+    //Google material Design, pour utiliser les bottomNAvigation
+    implementation 'com.google.android.material:material:1.6.1'
+    //Optional DrawerLayout
+    implementation "androidx.drawerlayout:drawerlayout:1.1.1"
+    //SharedPreference
+    implementation "androidx.preference:preference:1.2.0"
+
+
+    //LifeCycle MVVM *********************
+
+    // ViewModel
+    implementation "androidx.lifecycle:lifecycle-viewmodel:2.4.1"
+    implementation "androidx.lifecycle:lifecycle-viewmodel-ktx:2.4.1"
+    // LiveData
+    implementation "androidx.lifecycle:lifecycle-livedata:2.4.1"
+    // Lifecycles only (without ViewModel or LiveData)
+    implementation "androidx.lifecycle:lifecycle-runtime:2.4.1"
+    // Saved state module for ViewModel
+    implementation "androidx.lifecycle:lifecycle-viewmodel-savedstate:2.4.1"
+    // Annotation processor
+    annotationProcessor "androidx.lifecycle:lifecycle-common-java8:2.4.1"
+    // alternately - if using Java8, use the following instead of lifecycle-compiler
+    implementation "androidx.lifecycle:lifecycle-common-java8:2.4.1"
+    // optional - helpers for implementing LifecycleOwner in a Service
+    implementation "androidx.lifecycle:lifecycle-service:2.4.1"
+    // optional - ProcessLifecycleOwner provides a lifecycle for the whole application process
+    implementation "androidx.lifecycle:lifecycle-process:2.4.1"
+    // optional - ReactiveStreams support for LiveData
+    implementation "androidx.lifecycle:lifecycle-reactivestreams:2.4.1"
+    // optional - Test helpers for LiveData
+    testImplementation "androidx.arch.core:core-testing:2.1.0"
+
+    // RoundedImageView arrondir les images dans les coins
+    implementation 'com.makeramen:roundedimageview:2.3.0'
+
+
+
+
+
+    //Google Maps
+    implementation 'com.google.android.gms:play-services-maps:18.0.2'
+    implementation 'com.google.android.gms:play-services-location:19.0.1'
+
+    //Optional – squareup - Retrofit
+    implementation 'com.squareup.retrofit2:retrofit:2.9.0'
+    implementation 'com.squareup.retrofit2:converter-gson:2.9.0'
+    implementation 'com.squareup.okhttp3:logging-interceptor:5.0.0-alpha.7'
+    implementation 'com.squareup.okio:okio:3.1.0'
+    implementation 'com.squareup.okhttp:okhttp-urlconnection:2.7.5'
+    implementation 'com.squareup.okhttp:okhttp:2.7.5'
+    implementation 'com.squareup:otto:1.3.8'
+    implementation 'com.squareup.retrofit2:retrofit-mock:2.9.0'
+
+    //Retrofit2
+    implementation "com.squareup.retrofit2:converter-moshi:2.9.0"
+
+    //Gson Google ou json
+    implementation 'com.google.code.gson:gson:2.9.0'
+
+    // image around
+    implementation 'de.hdodenhof:circleimageview:3.1.0'
+
+    //Glide
+    implementation 'com.github.bumptech.glide:glide:4.13.2'
+    annotationProcessor 'com.github.bumptech.glide:compiler:4.13.2'
+    // not skip the tag really important to be with Glide to not have alarm of "not skip the tag" in loop
+    implementation 'androidx.exifinterface:exifinterface:1.3.3'
+
+    //Optional – Picasso
+    implementation 'com.squareup.picasso:picasso:2.71828'
+    //Piccasso arrondir l’image
+    //implementation 'jp.wasabeef:picasso-transformations:2.2.1'
+    //implementation 'jp.wasabeef:picasso-transformations:2.4.0'
+    // If you want to use the GPU Filters
+    implementation "jp.co.cyberagent.android:gpuimage:2.1.0"
+
+
+    //    //https://github.com/Yalantis/uCrop#usage
+    implementation 'com.github.krokyze:ucropnedit:2.2.8'
+//   // implementation 'com.github.yalantis:ucrop:2.2.6'   //- lightweight general solution
+//   // implementation 'com.github.yalantis:ucrop:2.2.6-native' //- get power of the native code to preserve image
+//
+//
+//    //Optional IMAGE en rond
+//    implementation 'de.hdodenhof:circleimageview:3.1.0'
+
+
+    //Firebase ***********************************
+
+    // Add the SDKs for any other Firebase products you want to use in your app
+    // For example, to use Firebase Authentication and Cloud Firestore
+    implementation 'com.google.firebase:firebase-auth:21.0.5'
+
+    implementation 'com.google.android.gms:play-services-auth:20.2.0'
+
+    implementation 'com.google.firebase:firebase-core:21.0.0'
+
+    // Add the Firebase SDK for Google Analytics
+    implementation 'com.google.firebase:firebase-analytics:21.0.0'
+
+
+    implementation 'com.google.firebase:firebase-firestore:24.1.2'
+
+    // Import the BoM for the Firebase platform
+    implementation platform('com.google.firebase:firebase-bom:30.0.2')
+    ///// implementation "com.google.firebase:firebase-bom:30.0.2"
+    implementation("com.squareup.okhttp3:okhttp:5.0.0-alpha.7")
+    // Import the BoM for the Firebase platform
+    implementation platform('com.google.firebase:firebase-bom:28.3.0')
+
+    // Declare the dependencies for the Firebase Cloud Messaging and Analytics libraries
+    // When using the BoM, you don't specify versions in Firebase library dependencies
+    implementation 'com.google.firebase:firebase-messaging'
+    implementation 'com.google.firebase:firebase-analytics'
+
+
+    //Firebase Messaging
+    implementation 'com.google.firebase:firebase-messaging:23.0.5'
+
+    // FirebaseUI for Firebase Realtime Database
+    implementation 'com.firebaseui:firebase-ui-database:8.0.1'
+
+    // FirebaseUI for Cloud Firestore
+    implementation 'com.firebaseui:firebase-ui-firestore:8.0.1'
+
+    //Firebase Storage put here the 16/02/2020
+    implementation 'com.google.firebase:firebase-storage:20.0.1'
+
+    // FirebaseUI for Firebase Auth
+    implementation 'com.firebaseui:firebase-ui-auth:8.0.1'
+
+    // FirebaseUI for Cloud Storage
+    implementation 'com.firebaseui:firebase-ui-storage:8.0.1'
+
+    //Cloud Storage
+    implementation 'com.google.firebase:firebase-storage:20.0.1'
+
+    //Necessary for Firebase
+    implementation 'com.android.support:multidex:1.0.3'
+
+
+    //Google Maps Locations
+    implementation 'com.google.android.gms:play-services-location:19.0.1'
+    //Google Maps Services
+    implementation 'com.google.android.gms:play-services-maps:18.0.2'
+    //Google Maps Places
+    implementation 'com.google.android.libraries.places:places:2.6.0'
+    //implementation 'com.google.android.libraries.places:places-compat:2.1.0'
+    //Google Maps utils
+    implementation 'com.google.maps.android:android-maps-utils:2.3.0'
+
+    //Google Places
+    implementation 'com.google.android.gms:play-services-places:17.0.0'
+    implementation 'com.google.android.libraries.places:places:2.6.0'
+
+    //for special marker
+    implementation 'com.google.maps.android:android-maps-utils:2.3.0'
+
+    //Google road to an another one
+    implementation 'com.google.maps:google-maps-services:0.10.2'
+    implementation 'org.slf4j:slf4j-simple:1.7.25'
+
+
+    // Required only if Facebook login support is required
+    // Find the latest Facebook SDK releases here: https://goo.gl/Ce5L94
+    // implementation 'com.facebook.android:facebook-android-sdk:5.13.0'
+
+    //TWITTER
+    // implementation 'com.twitter.sdk.android:twitter:3.2.0'// implementation 'com.twitter.sdk.android:twitter:3.0.0'
+    // Required only if Twitter login support is required
+    // Find the latest Twitter SDK releases here: https://goo.gl/E5wZvQ
+    //  implementation("com.twitter.sdk.android:twitter-core:3.2.0@aar") { transitive = true }
+
+
+
+    //serializable
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.3.3'
+
+
+
+    // For developers using AndroidX in their applications
+    implementation 'pub.devrel:easypermissions:3.0.0'
+
+    // For developers using the Android Support Library
+    implementation 'pub.devrel:easypermissions:3.0.0'
+
+    //View pager 2 viewpager2 viewpager 2
+    implementation "androidx.viewpager2:viewpager2:1.0.0"
+
+
+
+
+
+
+
+
+    //For Testing *****************************************
+
+    testImplementation 'junit:junit:4.13.2'
+
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+
+    //Date option with ThreeTenABP 310ABP
+    testImplementation "org.mockito:mockito-core:4.5.1" // @Mock and @Spy... and stuff
+
+    testImplementation "androidx.arch.core:core-runtime:2.1.0" // LiveData tools for Unit Testing
+    testImplementation "org.assertj:assertj-core:3.22.0" // Fluent assertions
+    testImplementation 'com.jakewharton.threetenabp:threetenabp:1.4.0' // Use "Clock" and ABP in tests
+    testImplementation "com.squareup.retrofit2:retrofit-mock:2.9.0" // Use fake "Calls"
+    androidTestImplementation "androidx.arch.core:core-testing:2.1.0" // Ne pas changer de version !!,InstantTaskExecutorRule
+    // Espresso
+// Core library
+    androidTestImplementation 'androidx.test.espresso:espresso-core:3.4.0'
+    androidTestImplementation 'androidx.test.ext:junit:1.1.3'
+// AndroidJUnitRunner and JUnit Rules
+    androidTestImplementation 'androidx.test:runner:1.4.0'
+    androidTestImplementation 'androidx.test:rules:1.4.0'
+    //androidTestImplementation 'com.android.support.test:rules:1.0.2'
+    implementation 'androidx.arch.core:core-testing:2.1.0'
+
+    // Required for annotations
+    annotationProcessor 'androidx.annotation:annotation:1.3.0'
+
+
+}
+
